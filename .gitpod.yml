@@ -1,14 +1,193 @@
-image: gitpod/workspace-java-17
+import javax.persistence.*;
+import java.io.Serializable;
+import java.util.Objects;
 
-tasks:
-  - init: "docker-compose up -d"
+@Entity
+@Table(name = "editoras")
+public class Editora implements Serializable {
 
-vscode:
-    extensions:
-      - vscjava.vscode-java-pack
-      - humao.rest-client
-      - vscjava.vscode-gradle
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id; // Identificador único da editora
 
-ports:
-  - port: 8080
-    visibility: public
+    @Column(nullable = false, length = 100)
+    private String nome; // Nome da editora
+
+    @Column(length = 200)
+    private String endereco; // Endereço da editora
+
+    @Column(length = 15)
+    private String telefone; // Telefone da editora
+
+    @Column(length = 100)
+    private String email; // Email de contato da editora
+
+    // Getters e Setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getEndereco() {
+        return endereco;
+    }
+
+    public void setEndereco(String endereco) {
+        this.endereco = endereco;
+    }
+
+    public String getTelefone() {
+        return telefone;
+    }
+
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    // equals() e hashCode() ajudam a comparar objetos de forma correta e otimizada
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Editora editora = (Editora) o;
+        return Objects.equals(id, editora.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    // Método toString() para facilitar o log e depuração
+    @Override
+    public String toString() {
+        return "Editora{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", endereco='" + endereco + '\'' +
+                ", telefone='" + telefone + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+}
+
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import java.util.Optional;
+
+@Repository
+public interface EditoraRepository extends JpaRepository<Editora, Long> {
+
+    // Exemplo de consulta personalizada: Buscar editora por nome
+    Optional<Editora> findByNome(String nome);
+
+}
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class EditoraService {
+
+    @Autowired
+    private EditoraRepository editoraRepository;
+
+    // Método para salvar uma nova editora ou atualizar uma existente
+    public Editora salvar(Editora editora) {
+        return editoraRepository.save(editora);
+    }
+
+    // Método para buscar uma editora pelo ID
+    public Optional<Editora> buscarPorId(Long id) {
+        return editoraRepository.findById(id);
+    }
+
+    // Método para listar todas as editoras
+    public List<Editora> listar() {
+        return editoraRepository.findAll();
+    }
+
+    // Método para buscar editora pelo nome
+    public Optional<Editora> buscarPorNome(String nome) {
+        return editoraRepository.findByNome(nome);
+    }
+}
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/editoras")
+public class EditoraController {
+
+    @Autowired
+    private EditoraService editoraService;
+
+    // Endpoint para criar uma nova editora
+    @PostMapping
+    public ResponseEntity<Editora> criarEditora(@RequestBody Editora editora) {
+        Editora novaEditora = editoraService.salvar(editora);
+        return ResponseEntity.ok(novaEditora);
+    }
+
+    // Endpoint para listar todas as editoras
+    @GetMapping
+    public ResponseEntity<List<Editora>> listarEditoras() {
+        List<Editora> editoras = editoraService.listar();
+        return ResponseEntity.ok(editoras);
+    }
+
+    // Endpoint para buscar uma editora pelo ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Editora> buscarEditora(@PathVariable Long id) {
+        Optional<Editora> editora = editoraService.buscarPorId(id);
+        return editora.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Endpoint para buscar uma editora pelo nome
+    @GetMapping("/nome/{nome}")
+    public ResponseEntity<Editora> buscarEditoraPorNome(@PathVariable String nome) {
+        Optional<Editora> editora = editoraService.buscarPorNome(nome);
+        return editora.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    }
+}
+
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
